@@ -3,6 +3,7 @@ import dash
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 import pandas as pd
@@ -32,28 +33,35 @@ keep_cols = ['provincial_case_id', 'age', 'sex', 'health_region', 'province', 'd
              'travel_yn', 'travel_history_country', 'additional_info']
 df = df[keep_cols]
 
-# # Load data (date last updated and actual data)
-# with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
-#     update_date = pd.read_excel(f, sheet_name='Cases', index_col=None, header=None, nrows=1)
-#     update_date = str(update_date.iloc[0, 0])[13:]
-#
-# with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
-#     df = pd.read_excel(f, sheet_name='Cases', index_col=None, skiprows=3, header=0)
-#     # March 1st onwards
-#     df = df.loc[df['date_report'] >= datetime.strptime('2020-03-01', '%Y-%m-%d')]
-#     # Remove repatriated (cruise ships)
-#     df = df.loc[df['province'] != 'Repatriated']
-#     # Keep only key columns
-#     keep_cols = ['provincial_case_id', 'age', 'sex', 'health_region', 'province', 'date_report', 'report_week',
-#                  'travel_yn', 'travel_history_country', 'additional_info']
-#     df = df[keep_cols]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     html.H1(children=f'COVID-19 Cases in Canada by Date Reported (as of {update_date})'),
     html.Div(children='''Select geography:'''),
-
+    # keycards
+    dbc.Row(
+        [dbc.Col(
+                dbc.Card(
+                    dbc.CardBody(
+                        [html.H4(children='Canada Total', className="card-title"),
+                         html.H2(id='canadatext_subtitle', className="card-subtitle")]
+                        ),
+                    color="info",
+                    inverse=True
+                    ),
+            width=4),
+        dbc.Col(
+            dbc.Card(
+                dbc.CardBody(
+                    [html.H4(children='Provincial Total', className="card-title"),
+                     html.H2(id='provtext_subtitle', className="card-subtitle")]
+                    ),
+                color="info",
+                inverse=True),
+            width=8)
+        ]
+    ),
     # Dropdown
     html.Div([dcc.Dropdown(id='Province',
                            options=[{'label': prov_names[i],
@@ -64,8 +72,8 @@ app.layout = html.Div([
                     'display': 'inline-block'}),
     dcc.Graph(id='funnel-graph'),
     html.H4(children='Individual COVID cases'),
-    dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0)
-    ])
+    dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0),
+])
 
 @app.callback(
     Output('funnel-graph', 'figure'),
@@ -122,6 +130,20 @@ def update_graph(prov):
     cols = [{"name": i, "id": i} for i in df_plot.columns]
     data_ = df_plot.to_dict('records')
     return cols, data_
+
+
+# Update keycards
+@app.callback(
+    [Output("canadatext_subtitle", "children"),
+     Output("provtext_subtitle", "children")],
+    [Input("Province", "value")])
+def update_text(prov):
+    canadatext = "{:,}".format(len(df))
+    if prov != 'All Provinces':
+        provtext = "{:,}".format(sum(df['province'] == prov))
+    else:
+        provtext = '-'
+    return canadatext, provtext
 
 
 if __name__ == '__main__':
