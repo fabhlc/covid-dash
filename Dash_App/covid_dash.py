@@ -10,25 +10,43 @@ import os
 from numpy import nan
 from datetime import datetime
 from province_names import prov_names
+import requests
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+# Get data
+covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/export?format=xlsx'
 
-# Load data (date last updated and actual data)
-with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
-    update_date = pd.read_excel(f, sheet_name='Cases', index_col=None, header=None, nrows=1)
-    update_date = str(update_date.iloc[0, 0])[13:]
+s = requests.get(covid_case_url).content
 
-with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
-    df = pd.read_excel(f, sheet_name='Cases', index_col=None, skiprows=3, header=0)
-    # March 1st onwards
-    df = df.loc[df['date_report'] >= datetime.strptime('2020-03-01', '%Y-%m-%d')]
-    # Remove repatriated (cruise ships)
-    df = df.loc[df['province'] != 'Repatriated']
-    # Keep only key columns
-    keep_cols = ['provincial_case_id', 'age', 'sex', 'health_region', 'province', 'date_report', 'report_week',
-                 'travel_yn', 'travel_history_country', 'additional_info']
-    df = df[keep_cols]
+update_date = pd.read_excel(s, sheet_name='Cases', index_col=None, header=None, nrows=1)
+update_date = str(update_date.iloc[0, 0])[13:]
+
+df = pd.read_excel(s, sheet_name='Cases', index_col=None, skiprows=3, header=0)
+# March 1st onwards
+df = df.loc[df['date_report'] >= datetime.strptime('2020-03-01', '%Y-%m-%d')]
+# Remove repatriated (cruise ships)
+df = df.loc[df['province'] != 'Repatriated']
+# Keep only key columns
+keep_cols = ['provincial_case_id', 'age', 'sex', 'health_region', 'province', 'date_report', 'report_week',
+             'travel_yn', 'travel_history_country', 'additional_info']
+df = df[keep_cols]
+
+# # Load data (date last updated and actual data)
+# with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
+#     update_date = pd.read_excel(f, sheet_name='Cases', index_col=None, header=None, nrows=1)
+#     update_date = str(update_date.iloc[0, 0])[13:]
+#
+# with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
+#     df = pd.read_excel(f, sheet_name='Cases', index_col=None, skiprows=3, header=0)
+#     # March 1st onwards
+#     df = df.loc[df['date_report'] >= datetime.strptime('2020-03-01', '%Y-%m-%d')]
+#     # Remove repatriated (cruise ships)
+#     df = df.loc[df['province'] != 'Repatriated']
+#     # Keep only key columns
+#     keep_cols = ['provincial_case_id', 'age', 'sex', 'health_region', 'province', 'date_report', 'report_week',
+#                  'travel_yn', 'travel_history_country', 'additional_info']
+#     df = df[keep_cols]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -107,4 +125,5 @@ def update_graph(prov):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True,
+                   dev_tools_hot_reload_interval=40_000) # reloads every half a day
