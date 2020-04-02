@@ -1,17 +1,12 @@
-import dash
-import dash_core_components as dcc
+import dash_table
 import dash_html_components as html
-import plotly.graph_objs as go
-import pandas as pd
+import dash_core_components as dcc
 
-def generate_table(dataframe, max_rows=10):
-    return html.Table([
-        html.Thead(
-            html.Tr([html.Th(col) for col in dataframe.columns])
-        ),
-        html.Tbody([
-            html.Tr([
-                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-            ]) for i in range(min(len(dataframe), max_rows))
-        ])
-    ])
+
+def generate_dashtable(dataframe, id_='filtered-datatable', page_size_val=10):
+    return dash_table.DataTable(
+            id=id_,
+            columns=[{"name": i, "id": i} for i in dataframe.columns],
+            page_current=0,
+            page_size=page_size_val,
+            page_action='custom')

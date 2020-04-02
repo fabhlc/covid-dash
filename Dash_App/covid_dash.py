@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import dash
+import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
+from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 import pandas as pd
 import os
 from numpy import nan
 from datetime import datetime
-from viz_table import generate_table
 from province_names import prov_names
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -24,7 +25,10 @@ with open(os.path.abspath('../Data/Public_COVID-19_Canada.xlsx'), 'rb') as f:
     df = df.loc[df['date_report'] >= datetime.strptime('2020-03-01', '%Y-%m-%d')]
     # Remove repatriated (cruise ships)
     df = df.loc[df['province'] != 'Repatriated']
-
+    # Keep only key columns
+    keep_cols = ['provincial_case_id', 'age', 'sex', 'health_region', 'province', 'date_report', 'report_week',
+                 'travel_yn', 'travel_history_country', 'additional_info']
+    df = df[keep_cols]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -42,12 +46,12 @@ app.layout = html.Div([
                     'display': 'inline-block'}),
     dcc.Graph(id='funnel-graph'),
     html.H4(children='Individual COVID cases'),
-    generate_table(df)
+    dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0)
     ])
 
 @app.callback(
-    dash.dependencies.Output('funnel-graph', 'figure'),
-    [dash.dependencies.Input('Province', 'value')])
+    Output('funnel-graph', 'figure'),
+    [Input('Province', 'value')])
 def update_graph(prov):
     if prov == "All Provinces":
         df_plot = df.copy()
@@ -57,27 +61,27 @@ def update_graph(prov):
     pv = pd.pivot_table(df_plot,
                         index=['date_report'],
                         columns=['province'],
-                        values=['case_id'],
+                        values=['provincial_case_id'],
                         aggfunc='count',
                         fill_value=nan)
 
     if prov == 'All Provinces':
-        trace1 = go.Bar(x=pv.index, y=pv[('case_id', 'Ontario')], name='Ontario')
-        trace2 = go.Bar(x=pv.index, y=pv[('case_id', 'BC')], name='British Columbia')
-        trace3 = go.Bar(x=pv.index, y=pv[('case_id', 'Alberta')], name='Alberta')
-        trace4 = go.Bar(x=pv.index, y=pv[('case_id', 'Manitoba')], name='Manitoba')
-        trace5 = go.Bar(x=pv.index, y=pv[('case_id', 'NL')], name='Newfoundland and Labrador')
-        trace6 = go.Bar(x=pv.index, y=pv[('case_id', 'New Brunswick')], name='New Brunswick')
-        trace7 = go.Bar(x=pv.index, y=pv[('case_id', 'Quebec')], name='Quebec')
-        trace8 = go.Bar(x=pv.index, y=pv[('case_id', 'Yukon')], name='Yukon')
-        trace9 = go.Bar(x=pv.index, y=pv[('case_id', 'Saskatchewan')], name='Saskatchewan')
-        trace10 = go.Bar(x=pv.index, y=pv[('case_id', 'PEI')], name='Prince Edward Island')
-        trace11 = go.Bar(x=pv.index, y=pv[('case_id', 'Nova Scotia')], name='Nova Scotia')
-        trace12 = go.Bar(x=pv.index, y=pv[('case_id', 'NWT')], name='Northwest Territories')
+        trace1 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Ontario')], name='Ontario')
+        trace2 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'BC')], name='British Columbia')
+        trace3 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Alberta')], name='Alberta')
+        trace4 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Manitoba')], name='Manitoba')
+        trace5 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'NL')], name='Newfoundland and Labrador')
+        trace6 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'New Brunswick')], name='New Brunswick')
+        trace7 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Quebec')], name='Quebec')
+        trace8 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Yukon')], name='Yukon')
+        trace9 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Saskatchewan')], name='Saskatchewan')
+        trace10 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'PEI')], name='Prince Edward Island')
+        trace11 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Nova Scotia')], name='Nova Scotia')
+        trace12 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'NWT')], name='Northwest Territories')
 
         traces = [trace1, trace2, trace3, trace4, trace5, trace6, trace7, trace8, trace9, trace10, trace11, trace12]
     else:
-        trace1 = go.Bar(x=pv.index, y=pv[('case_id', prov)], name=prov_names[prov])
+        trace1 = go.Bar(x=pv.index, y=pv[('provincial_case_id', prov)], name=prov_names[prov])
         traces = [trace1]
 
     return {
@@ -86,6 +90,21 @@ def update_graph(prov):
             title=f'Cases in {prov}',
             barmode='stack')
     }
+
+
+@app.callback(
+    [Output('filtered-datatable', 'columns'), Output('filtered-datatable', 'data')],
+    [Input('Province', 'value')])
+def update_graph(prov):
+    if prov == "All Provinces":
+        df_plot = df.copy()
+    else:
+        df_plot = df[df['province'] == prov]
+
+    cols = [{"name": i, "id": i} for i in df_plot.columns]
+    data_ = df_plot.to_dict('records')
+    return cols, data_
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
