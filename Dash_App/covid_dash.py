@@ -17,12 +17,12 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/export?format=xlsx'
 
 
-df, update_date = get_covid_data(covid_case_url)
+df, deaths, update_date = get_covid_data(covid_case_url)
 
 # Clean age group data
-df['age'] = group_age(df['age'])
-df['age_order'] = order_agegroups(df['age'])
-
+for x in [df, deaths]:
+    x['age'] = group_age(x['age'])
+    x['age_order'] = order_agegroups(x['age'])
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -66,7 +66,17 @@ app.layout = html.Div([
     dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0),
     dcc.Graph(id='agegender-graph'),
     html.Div(children='* - Excluding records where neither sex nor age are reported.',
-             style={'color': 'grey', 'fontsize': 9})
+             style={'color': 'grey', 'fontsize': 9}),
+
+    # Deaths
+    html.Div(
+        [html.H4(children='Fatal Cases of Covid'),
+         dash_table.DataTable(id='death-df', page_size=15, page_current=0),
+         dcc.Graph(id='death-graph'),
+         html.Div(children='* - Excluding records where neither sex nor age are reported.',
+                  style={'color': 'grey', 'fontsize': 9})
+         ],
+    )
 ])
 
 @app.callback(
@@ -112,6 +122,7 @@ def update_graph(prov):
     }
 
 
+# Cases Table
 @app.callback(
     [Output('filtered-datatable', 'columns'), Output('filtered-datatable', 'data')],
     [Input('Province', 'value')])
@@ -171,8 +182,39 @@ def update_agegender(prov):
         )
     }
 
+
+@app.callback(
+    [Output('death-df', 'columns'), Output('death-df', 'data'), Output('death-graph', 'figure')],
+    [Input('Province', 'value')])
+def update_deathsdf(prov):
+    if prov == 'All Provinces':
+        death_plot = deaths.copy()
+    else:
+        death_plot = deaths[deaths['province'] == prov]
+    cols = [{"name": i, "id": i} for i in death_plot.columns]
+    data_ = death_plot.to_dict('records')
+
+    # Graph
+    death_plot = death_plot[~((death_plot['age'] == 'Not Reported') & (death_plot['sex'] == 'Not Reported'))]
+    death_plot = death_plot.groupby(['sex', 'age_order'])['death_id'].count()
+    death_plot_data = {
+        'data': [
+                {'x': death_plot.Female.index, 'y': death_plot.Female.values, 'type': 'bar', 'name': 'female', 'color': 'primary'},
+                {'x': death_plot.Male.index, 'y': death_plot.Male.values, 'type': 'bar', 'name': 'male', 'color': 'secondary'},
+                {'x': death_plot['Not Reported'].index, 'y': death_plot['Not Reported'].values, 'type': 'bar', 'name': 'NA', 'color': 'grey'}],
+            'layout': go.Layout(
+                title=f'Deaths by Age and Gender in {prov}*',
+                xaxis=dict(tickvals = death_plot.Male.index,
+                           ticktext=[inverse_order_dict(i) for i in death_plot.Male.index],
+                           title='Age Range')
+            )
+        }
+
+    return cols, data_, death_plot_data
+
+
 if __name__ == '__main__':
     df.to_csv('/Users/fabiennechan/Documents/data.csv', index=None)
-    app.run_server(debug=True)
-
-                   # dev_tools_hot_reload_interval=40_000) # reloads every half a day
+    deaths.to_csv('/Users/fabiennechan/Documents/deaths.csv', index=None)
+    app.run_server(debug=True,
+                   dev_tools_hot_reload_interval=40_000) # reloads every half a day

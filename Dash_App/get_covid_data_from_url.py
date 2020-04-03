@@ -9,9 +9,12 @@ covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHza
 def get_covid_data(covid_case_url):
     s = requests.get(covid_case_url).content
 
+    # Update Date
     update_date = pd.read_excel(s, sheet_name='Cases', index_col=None, header=None, nrows=1)
     update_date = str(update_date.iloc[0, 0])[13:]
 
+
+    # Cases Data
     df = pd.read_excel(s, sheet_name='Cases', index_col=None, skiprows=3, header=0)
 
     # March 1st onwards
@@ -26,4 +29,15 @@ def get_covid_data(covid_case_url):
 
     df = df[keep_cols]
 
-    return df, update_date
+
+    # Deaths
+    deaths = pd.read_excel(s, sheet_name='Mortality', index_col=None, skiprows=3, header=0)
+    keep_cols_death = ['death_id', 'age', 'sex', 'health_region', 'province', 'date_death_report',
+                       'additional_info']
+    deaths = deaths[keep_cols_death]
+    deaths.sort_values('date_death_report', ascending=False, inplace=True)
+
+    # Remove repatriated (cruise ships)
+    deaths = deaths.loc[deaths['province'] != 'Repatriated']
+
+    return df, deaths, update_date

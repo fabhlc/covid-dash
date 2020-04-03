@@ -45,6 +45,7 @@ order_dict = {
         'Not Reported': 10,
         '': 11
     }
+inv_dict = {v: k for k, v in order_dict.items()}
 
 def order_agegroups(input_column):
     ''' Input age column and output an ordered one'''
@@ -58,6 +59,4 @@ def order_agegroups(input_column):
     return output_column
 
 def inverse_order_dict(input_val):
-    inv_dict = {v: k for k, v in order_dict.items()}
-
     return inv_dict[input_val]
