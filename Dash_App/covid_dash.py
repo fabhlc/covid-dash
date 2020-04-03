@@ -213,7 +213,7 @@ def update_deathsdf(prov):
 
 
 if __name__ == '__main__':
-    df.to_csv('/Users/fabiennechan/Documents/data.csv', index=None)
-    deaths.to_csv('/Users/fabiennechan/Documents/deaths.csv', index=None)
+    # df.to_csv('/Users/fabiennechan/Documents/data.csv', index=None)
+    # deaths.to_csv('/Users/fabiennechan/Documents/deaths.csv', index=None)
     app.run_server(debug=True,
                    dev_tools_hot_reload_interval=40_000) # reloads every half a day
