@@ -10,6 +10,7 @@ import os
 from numpy import nan
 from province_names import prov_names
 from get_covid_data_from_url import get_covid_data
+from format_data import group_age, order_agegroups, inverse_order_dict
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -17,6 +18,11 @@ covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHza
 
 
 df, update_date = get_covid_data(covid_case_url)
+
+# Clean age group data
+df['age'] = group_age(df['age'])
+df['age_order'] = order_agegroups(df['age'])
+
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
@@ -58,6 +64,9 @@ app.layout = html.Div([
     dcc.Graph(id='funnel-graph'),
     html.H4(children='Individual COVID cases'),
     dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0),
+    dcc.Graph(id='agegender-graph'),
+    html.Div(children='* - Excluding records where neither sex nor age are reported.',
+             style={'color': 'grey', 'fontsize': 9})
 ])
 
 @app.callback(
@@ -131,6 +140,39 @@ def update_text(prov):
     return canadatext, provtext
 
 
+# Update age/gender distribution - bar chart
+@app.callback(
+    Output("agegender-graph", "figure"),
+    [Input("Province", "value")])
+def update_agegender(prov):
+    if prov == 'All Provinces':
+        df_plot = df.copy()
+        geo_name = 'Canada'
+    else:
+        df_plot = df[df['province'] == prov]
+        geo_name = prov
+
+    # Drop if row doesn't have values for either age or sex
+    df_plot = df_plot[~((df_plot['age']=='Not Reported') & (df_plot['sex'] == 'Not Reported'))]
+
+    # Group
+    df_plot = df_plot.groupby(['sex', 'age_order'])['provincial_case_id'].count()
+
+    return {
+        'data': [
+            {'x': df_plot.Female.index, 'y': df_plot.Female.values, 'type': 'bar', 'name': 'female', 'color': 'primary'},
+            {'x': df_plot.Male.index, 'y': df_plot.Male.values, 'type': 'bar', 'name': 'male', 'color': 'secondary'},
+            {'x': df_plot['Not Reported'].index, 'y': df_plot['Not Reported'].values, 'type': 'bar', 'name': 'NA', 'color': 'grey'}],
+        'layout': go.Layout(
+            title=f'Breakdown by Age and Gender in {geo_name}*',
+            xaxis=dict(tickvals = df_plot.Female.index,
+                       ticktext=[inverse_order_dict(i) for i in df_plot.Female.index],
+                       title='Age Range')
+        )
+    }
+
 if __name__ == '__main__':
+    df.to_csv('/Users/fabiennechan/Documents/data.csv', index=None)
     app.run_server(debug=True)
+
                    # dev_tools_hot_reload_interval=40_000) # reloads every half a day
