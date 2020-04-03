@@ -6,7 +6,6 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 import plotly.graph_objs as go
 import pandas as pd
-import os
 from numpy import nan
 from province_names import prov_names
 from get_covid_data_from_url import get_covid_data
@@ -24,7 +23,7 @@ for x in [df, deaths]:
     x['age'] = group_age(x['age'])
     x['age_order'] = order_agegroups(x['age'])
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash()
 
 app.layout = html.Div([
     html.H1(children=f'COVID-19 Cases in Canada by Date Reported (as of {update_date})'),
