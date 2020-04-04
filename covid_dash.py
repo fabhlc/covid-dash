@@ -27,57 +27,72 @@ app = dash.Dash()
 server = app.server
 app.title = 'COVID-19 Dashboard for Canada'
 
-app.layout = html.Div([
-    html.H1(children=f'COVID-19 Cases in Canada by Date Reported (as of {update_date})'),
-    # keycards
-    html.Div(
-        dbc.Row(
-            [dbc.Col(
-                dbc.Card(
-                    dbc.CardBody(
-                        [html.H4(children='Canada Total', className="card-title"),
-                         html.H2(id='canadatext_subtitle', className="card-subtitle")]),
-                    color="info",
-                    inverse=True,
-                    outline=True),
-                md=3),
-            dbc.Col(
-                dbc.Card(
-                    dbc.CardBody(
-                        [html.H4(children='Provincial Total', className="card-title"),
-                         html.H2(id='provtext_subtitle', className="card-subtitle")]),
-                    color="info",
-                    inverse=True,
-                    outline=True),
-                md=8)
-            ],
-        className='mb-4')
-    ),
-    # Dropdown
-    html.Div(children='''Select geography:'''),
-    html.Div([dcc.Dropdown(id='Province',
-                           options=[{'label': prov_names[i],
-                                     'value': i
-                                     } for i in list(df.province.unique()) + ['All Provinces']],
-                           value='All Provinces')],
-             style={'width': '25%',
-                    'display': 'inline-block'}),
-    dcc.Graph(id='funnel-graph'),
-    html.H4(children='Individual COVID cases'),
-    dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0),
-    dcc.Graph(id='agegender-graph'),
-    html.Div(children='* - Excluding records where neither sex nor age are reported.',
-             style={'color': 'grey', 'fontsize': 9}),
 
-    # Deaths
-    html.Div(
-        [html.H4(children='Fatal Cases of Covid'),
-         dash_table.DataTable(id='death-df', page_size=15, page_current=0),
-         dcc.Graph(id='death-graph'),
-         html.Div(children='* - Excluding records where neither sex nor age are reported.',
-                  style={'color': 'grey', 'fontsize': 9})
-         ],
-    )
+# Define layout
+layout = {
+    'autosize': True,
+    'automargin': True,
+    'margin': {'l': 30, 'r': 30, 'b': 20, 't': 40},
+    'hovermode': "closest",
+    'plot_bgcolor': "#F9F9F9",
+    'paper_bgcolor': "#F9F9F9",
+    'legend': {'font': {'size': 10}, 'orientation': "h"},
+    'title': "Satellite Overview",
+    'main_bg': '#ececec'
+}
+
+
+app.layout = html.Div(
+    style={'backgroundColor': layout['main_bg'],
+           'textAlign': 'center',
+           'font-family': 'arial'},
+    children=[
+        html.H1(children='COVID-19 Cases in Canada by Date Reported'),
+        html.H3(chlidren=f'(Last refresh: {update_date})'),
+        # keycards
+        html.Div(
+            dbc.Row(
+                [dbc.Col(
+                    dbc.Card(
+                        dbc.CardBody(
+                            [html.H4(children='Canada Total', className="card-title"),
+                             html.H1(id='canadatext_subtitle', className="card-subtitle")]),
+                        color="info",
+                        outline=True)),
+                 dbc.Col(
+                    dbc.Card(
+                        dbc.CardBody(
+                            [html.H4(children='Provincial Total', className="card-title"),
+                             html.H1(id='provtext_subtitle', className="card-subtitle")]),
+                        color="info",
+                        outline=True))
+                 ])
+        ),
+        # Dropdown
+        html.Div(children='''Select geography:'''),
+        html.Div([dcc.Dropdown(id='Province',
+                               options=[{'label': prov_names[i],
+                                         'value': i
+                                         } for i in list(df.province.unique()) + ['All Provinces']],
+                               value='All Provinces')],
+                 style={'width': '25%',
+                        'display': 'inline-block'}),
+        dcc.Graph(id='funnel-graph'),
+        html.H4(children='Individual COVID cases'),
+        dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0),
+        dcc.Graph(id='agegender-graph'),
+        html.Div(children='* - Excluding records where neither sex nor age are reported.',
+                 style={'color': 'grey', 'fontsize': 9}),
+
+        # Deaths
+        html.Div(
+            [html.H4(children='Fatal Cases of Covid'),
+             dash_table.DataTable(id='death-df', page_size=15, page_current=0),
+             dcc.Graph(id='death-graph'),
+             html.Div(children='* - Excluding records where neither sex nor age are reported.',
+                      style={'color': 'grey', 'fontsize': 9})
+             ],
+        )
 ])
 
 @app.callback(
@@ -176,7 +191,7 @@ def update_agegender(prov):
             {'x': df_plot.Male.index, 'y': df_plot.Male.values, 'type': 'bar', 'name': 'male', 'color': 'secondary'},
             {'x': df_plot['Not Reported'].index, 'y': df_plot['Not Reported'].values, 'type': 'bar', 'name': 'NA', 'color': 'grey'}],
         'layout': go.Layout(
-            title=f'Breakdown by Age and Gender in {geo_name}*',
+            title=f'Breakdown of Cases by Age and Gender in {geo_name}*',
             xaxis=dict(tickvals = df_plot.Female.index,
                        ticktext=[inverse_order_dict(i) for i in df_plot.Female.index],
                        title='Age Range')
