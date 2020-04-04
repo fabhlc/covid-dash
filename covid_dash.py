@@ -16,7 +16,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/export?format=xlsx'
 
 
-df, deaths, update_date = get_covid_data(covid_case_url, method_='local')
+df, deaths, update_date = get_covid_data(covid_case_url, method_='url')
 
 # Clean age group data
 for x in [df, deaths]:
@@ -38,7 +38,10 @@ layout = {
     'paper_bgcolor': "#F9F9F9",
     'legend': {'font': {'size': 10}, 'orientation': "h"},
     'title': "Satellite Overview",
-    'main_bg': '#ececec'
+    'main_bg': '#ececec',
+    'Male': '#bcd2ee',
+    'Female': '#6ca6cd',
+    'Not Reported': '#cae1ff'
 }
 
 
@@ -188,7 +191,7 @@ def update_agegender(prov):
     # If there are not reported values:
     output_data = []
     # If gender data exists for province, add to figure data
-    for (sx, colour) in [('Female', 'primary'), ('Male', 'secondary'), ('Not Reported', 'grey')]:
+    for (sx, colour) in [('Female', layout['Female']), ('Male', layout['Male']), ('Not Reported', layout['Not Reported'])]:
         if sx in [i[0] for i in df_plot.index]:
             output_data.append({'x': df_plot[sx].index,
                                          'y': df_plot[sx].values,
@@ -225,7 +228,7 @@ def update_deathsdf(prov):
 
         # If gender data exists for province, add to figure data
         death_plot_data_data = []
-        for (sx, colour) in [('Female', 'primary'), ('Male', 'secondary'), ('Not Reported', 'grey')]:
+        for (sx, colour) in [('Female', layout['Female']), ('Male', layout['Male']), ('Not Reported', layout['Not Reported'])]:
             if sx in [i[0] for i in death_plot.index]:
                 death_plot_data_data.append({'x': death_plot[sx].index,
                                              'y': death_plot[sx].values,
