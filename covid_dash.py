@@ -44,6 +44,12 @@ layout = {
     'Not Reported': '#cae1ff'
 }
 
+colname_dict = {'provincial_case_id': 'ID', 'age': 'Age Range', 'sex': 'Sex', 'health_region': 'Region',
+                'province': 'Province', 'date_report': 'Report Date', 'report_week': 'Week Reported',
+                'travel_yn': 'Travel?', 'travel_history_country': 'Country of Travel',
+                'additional_info': 'Additional Info', 'age_order': 'Age (order)', 'death_id': 'ID',
+                'date_death_report': 'Report Date'}
+
 
 app.layout = html.Div(
     style={'backgroundColor': layout['main_bg'],
@@ -82,7 +88,13 @@ app.layout = html.Div(
                         'display': 'inline-block'}),
         dcc.Graph(id='funnel-graph'),
         html.H4(children='Individual COVID cases'),
-        dash_table.DataTable(id='filtered-datatable', page_size=15, page_current=0),
+        dash_table.DataTable(id='filtered-datatable',
+                             page_size=15,
+                             page_current=0,
+                             style_header={'fontWeight': 'bold',
+                                           'backgroundColor': '#cdc9c9'},
+                             style_data_conditional=[{'if': {'row_index': 'odd'},
+                                                     'backgroundColor': '#fffafa'}]),
         dcc.Graph(id='agegender-graph'),
         html.Div(children='* - Excluding records where neither sex nor age are reported.',
                  style={'color': 'grey', 'fontsize': 9}),
@@ -90,7 +102,14 @@ app.layout = html.Div(
         # Deaths
         html.Div(
             [html.H4(children='Fatal Cases of Covid'),
-             dash_table.DataTable(id='death-df', page_size=15, page_current=0),
+             dash_table.DataTable(id='death-df',
+                                  page_size=15,
+                                  page_current=0,
+                                  style_header={'fontWeight': 'bold',
+                                                'backgroundColor': '#cdc9c9'},
+                                  style_data_conditional=[{'if': {'row_index': 'odd'},
+                                                           'backgroundColor': '#fffafa'}]
+                                  ),
              dcc.Graph(id='death-graph'),
              html.Div(children='* - Excluding records where neither sex nor age are reported.',
                       style={'color': 'grey', 'fontsize': 9})
@@ -151,7 +170,13 @@ def update_graph(prov):
     else:
         df_plot = df[df['province'] == prov]
 
-    cols = [{"name": i, "id": i} for i in df_plot.columns]
+    # Format datetime
+    df_plot.loc[:, 'date_report'] = df_plot['date_report'].dt.strftime('%d-%m-%Y')
+
+    # Edit columns (format, drop, rename)
+    df_plot.drop(['age_order', 'report_week'], axis=1, inplace=True)
+
+    cols = [{"name": colname_dict[i], "id": i} for i in df_plot.columns]
     data_ = df_plot.to_dict('records')
     return cols, data_
 
@@ -218,8 +243,10 @@ def update_deathsdf(prov):
         death_plot = deaths.copy()
     else:
         death_plot = deaths[deaths['province'] == prov]
-    cols = [{"name": i, "id": i} for i in death_plot.columns]
+    cols = [{"name": colname_dict[i], "id": i} for i in death_plot.columns]
     data_ = death_plot.to_dict('records')
+
+    death_count = sum(deaths['province'] == prov)
 
     if not death_plot.empty:
         # Graph
@@ -245,7 +272,7 @@ def update_deathsdf(prov):
     death_plot_data = {
         'data': death_plot_data_data,
         'layout': go.Layout(
-            title=f'Deaths by Age and Gender in {prov}*',
+            title=f'Deaths by Age and Gender in {prov}* - (Total: {death_count} deaths)',
             xaxis={'tickvals': tick_vals,
                    'ticktext': [inverse_order_dict(i) for i in tick_vals],
                    'title': 'Age Range'}

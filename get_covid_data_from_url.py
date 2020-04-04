@@ -42,6 +42,10 @@ def get_covid_data(covid_case_url, method_ = 'url'):
     keep_cols_death = ['death_id', 'age', 'sex', 'health_region', 'province', 'date_death_report',
                        'additional_info']
     deaths = deaths[keep_cols_death]
+
+    # Format datetime
+    deaths['date_death_report'] = deaths['date_death_report'].dt.strftime('%d-%m-%Y')
+
     deaths.sort_values('date_death_report', ascending=False, inplace=True)
 
     # Remove repatriated (cruise ships)
