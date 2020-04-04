@@ -186,22 +186,22 @@ def update_agegender(prov):
     df_plot = df_plot.groupby(['sex', 'age_order'])['provincial_case_id'].count().unstack(fill_value=0).stack()
 
     # If there are not reported values:
-    output_data = [
-        {'x': df_plot.Female.index,
-         'y': df_plot.Female.values, 'type': 'bar', 'name': 'Female', 'color': 'primary'},
-        {'x': df_plot.Male.index,
-         'y': df_plot.Male.values, 'type': 'bar', 'name': 'Male', 'color': 'secondary'}]
-    if 'Not Reported' in [i[0] for i in df_plot.index]:
-        output_data.append(
-            {'x': df_plot['Not Reported'].index,
-             'y': df_plot['Not Reported'].values, 'type': 'bar', 'name': 'Not Reported', 'color': 'grey'})
-
+    output_data = []
+    # If gender data exists for province, add to figure data
+    for (sx, colour) in [('Female', 'primary'), ('Male', 'secondary'), ('Not Reported', 'grey')]:
+        if sx in [i[0] for i in df_plot.index]:
+            output_data.append({'x': df_plot[sx].index,
+                                         'y': df_plot[sx].values,
+                                         'type': 'bar',
+                                         'name': sx,
+                                         'color': colour})
+            tick_vals = df_plot[sx].index
     return {
         'data': output_data,
         'layout': go.Layout(
             title=f'Breakdown by Age and Gender in {geo_name}*',
-            xaxis=dict(tickvals = df_plot.Female.index,
-                       ticktext=[inverse_order_dict(i) for i in df_plot.Female.index],
+            xaxis=dict(tickvals = tick_vals,
+                       ticktext=[inverse_order_dict(i) for i in tick_vals],
                        title='Age Range')
         )
     }
@@ -223,16 +223,16 @@ def update_deathsdf(prov):
         death_plot = death_plot[~((death_plot['age'] == 'Not Reported') & (death_plot['sex'] == 'Not Reported'))]
         death_plot = death_plot.groupby(['sex', 'age_order'])['death_id'].count().unstack(fill_value=0).stack()
 
-        death_plot_data_data = [
-                    {'x': death_plot.Female.index,
-                     'y': death_plot.Female.values, 'type': 'bar', 'name': 'Female', 'color': 'primary'},
-                    {'x': death_plot.Male.index,
-                     'y': death_plot.Male.values, 'type': 'bar', 'name': 'Male', 'color': 'secondary'}]
-        if 'Not Reported' in [i[0] for i in death_plot.index]:
-            death_plot_data_data.append(
-                {'x': death_plot['Not Reported'].index,
-                 'y': death_plot['Not Reported'].values, 'type': 'bar', 'name': 'Not Reported', 'color': 'grey'})
-        tick_vals = death_plot.Male.index
+        # If gender data exists for province, add to figure data
+        death_plot_data_data = []
+        for (sx, colour) in [('Female', 'primary'), ('Male', 'secondary'), ('Not Reported', 'grey')]:
+            if sx in [i[0] for i in death_plot.index]:
+                death_plot_data_data.append({'x': death_plot[sx].index,
+                                             'y': death_plot[sx].values,
+                                             'type': 'bar',
+                                             'name': sx,
+                                             'color': colour})
+                tick_vals = death_plot[sx].index
     else:
         tmp = deaths.groupby(['sex', 'age_order'])['death_id'].count().Male.index
         death_plot_data_data = [{'x': tmp,
