@@ -24,8 +24,8 @@ def get_covid_data(covid_case_url, method_ = 'url'):
     # Cases Data
     df = pd.read_excel(s, sheet_name='Cases', index_col=None, skiprows=3, header=0, engine='xlrd')
 
-    # March 1st onwards
-    df = df.loc[df['date_report'] >= datetime.strptime('2020-03-01', '%Y-%m-%d')]
+    # Jan 1st onwards
+    df = df.loc[df['date_report'] >= datetime.strptime('2020-01-01', '%Y-%m-%d')]
 
     # Remove repatriated (cruise ships)
     df = df.loc[df['province'] != 'Repatriated']
