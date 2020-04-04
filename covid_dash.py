@@ -24,6 +24,8 @@ for x in [df, deaths]:
     x['age_order'] = order_agegroups(x['age'])
 
 app = dash.Dash()
+server = app.server
+app.title = 'covid dash!'
 
 app.layout = html.Div([
     html.H1(children=f'COVID-19 Cases in Canada by Date Reported (as of {update_date})'),
@@ -212,9 +214,7 @@ def update_deathsdf(prov):
     return cols, data_, death_plot_data
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
     # df.to_csv('/Users/fabiennechan/Documents/data.csv', index=None)
     # deaths.to_csv('/Users/fabiennechan/Documents/deaths.csv', index=None)
-runapp = app.run_server(debug=True,
-                        dev_tools_hot_reload_interval=40_000) # reloads every half a day
-runapp
+    app.run_server()

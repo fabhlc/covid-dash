@@ -1,1 +1,1 @@
-web: gunicorn covid_dash:runapp
+web: gunicorn covid_dash:server
