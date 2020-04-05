@@ -228,7 +228,7 @@ def update_agegender(prov):
         'data': output_data,
         'layout': go.Layout(
             title=f'Breakdown by Age and Gender in {geo_name}*',
-            xaxis=dict(tickvals = tick_vals,
+            xaxis=dict(tickvals=tick_vals,
                        ticktext=[inverse_order_dict(i) for i in tick_vals],
                        title='Age Range')
         )
@@ -241,12 +241,12 @@ def update_agegender(prov):
 def update_deathsdf(prov):
     if prov == 'All Provinces':
         death_plot = deaths.copy()
+        death_count = len(deaths)
     else:
         death_plot = deaths[deaths['province'] == prov]
+        death_count = sum(deaths['province'] == prov)
     cols = [{"name": colname_dict[i], "id": i} for i in death_plot.columns]
     data_ = death_plot.to_dict('records')
-
-    death_count = sum(deaths['province'] == prov)
 
     if not death_plot.empty:
         # Graph
@@ -266,13 +266,13 @@ def update_deathsdf(prov):
     else:
         tmp = deaths.groupby(['sex', 'age_order'])['death_id'].count().Male.index
         death_plot_data_data = [{'x': tmp,
-                                'y': [0 for i in tmp], 'type': 'bar', 'name': 'null', 'color': 'primary'}]
+                                 'y': [0 for i in tmp], 'type': 'bar', 'name': 'null', 'color': 'primary'}]
         tick_vals = tmp
 
     death_plot_data = {
         'data': death_plot_data_data,
         'layout': go.Layout(
-            title=f'Deaths by Age and Gender in {prov}* - (Total: {death_count} deaths)',
+            title=f'Deaths by Age and Gender in {prov}* (Total: {death_count} deaths)',
             xaxis={'tickvals': tick_vals,
                    'ticktext': [inverse_order_dict(i) for i in tick_vals],
                    'title': 'Age Range'}
