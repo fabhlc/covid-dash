@@ -58,6 +58,9 @@ app.layout = html.Div(
     children=[
         html.H1(children='COVID-19 Confirmed Cases in Canada by Date Reported'),
         html.H3(children=f'(Last refresh: {update_date})'),
+        html.P(children='Built by Fabienne Chan. Data is crowd-sourced and I do not take liability for faulty reporting.'),
+        html.A("[Data source]", href="https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/"),
+        html.A("[GitHub]", href="https://github.com/fabhlc/covid-dash"),
         # keycards
         html.Div(
             dbc.Row(
