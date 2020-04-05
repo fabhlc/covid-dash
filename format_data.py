@@ -2,8 +2,14 @@ from numpy import nan
 import re
 
 def group_age(input_column):
-    ''' If input age is an integer, it groups it correctly.'''
+    ''' If input age is an integer, it groups it correctly. Otherwise, fixes string.'''
     output_column = []
+
+    def rangeify(z):
+        # Takes in integer and outputs range
+        flr = int(round(z - 4.5, -1))
+        clg = flr + 9
+        return f'{flr}-{clg}'
 
     for y in input_column:
         try:
@@ -11,14 +17,15 @@ def group_age(input_column):
                 if y < 20:
                     output_column.append('<20')
                 else:
-                    flr = int(round(y - 4.5, -1))
-                    clg = flr + 9
-                    output_column.append(f'{flr}-{clg}')
-
+                    output_column.append(rangeify(y))
+            elif '>' in y:
+                # e.g. ">70"
+                num = int(re.findall("[0-9]+", y)[0])
+                output_column.append(rangeify(num))
             elif (y not in order_dict.keys()) or ('<' in y):
                 # e.g. '10-19' or '<10'
                 try:
-                    first_num = int(re.findall('[0-9]*', y)[0])
+                    first_num = int(re.findall('[0-9]+', y)[0])
                     if first_num < 20:
                         output_column.append('<20')
                     else:
@@ -42,8 +49,9 @@ order_dict = {
         '70-79': 7,
         '80-89': 8,
         '90-99': 9,
-        'Not Reported': 10,
-        '': 11
+        '100-109': 10,
+        'Not Reported': 11,
+        '': 12
     }
 inv_dict = {v: k for k, v in order_dict.items()}
 

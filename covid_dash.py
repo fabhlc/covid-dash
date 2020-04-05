@@ -44,7 +44,7 @@ layout = {
     'Not Reported': '#cae1ff'
 }
 
-colname_dict = {'provincial_case_id': 'ID', 'age': 'Age Range', 'sex': 'Sex', 'health_region': 'Region',
+colname_dict = {'provincial_case_id': 'Provincial ID', 'age': 'Age Range', 'sex': 'Sex', 'health_region': 'Region',
                 'province': 'Province', 'date_report': 'Report Date', 'report_week': 'Week Reported',
                 'travel_yn': 'Travel?', 'travel_history_country': 'Country of Travel',
                 'additional_info': 'Additional Info', 'age_order': 'Age (order)', 'death_id': 'ID',
