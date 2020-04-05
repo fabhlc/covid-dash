@@ -61,6 +61,24 @@ app.layout = html.Div(
         html.P(children='Built by Fabienne Chan. Data is crowd-sourced and I do not take liability for faulty reporting.'),
         html.A("[Data source]", href="https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/"),
         html.A("[GitHub]", href="https://github.com/fabhlc/covid-dash"),
+
+        # Dropdown
+        html.Div(children='''Select geography:'''),
+        html.Div([dcc.Dropdown(id='Province',
+                               options=[{'label': prov_names[i],
+                                         'value': i
+                                         } for i in ['All Provinces'] + sorted(list(df.province.unique()))],
+                               value='All Provinces')],
+                 style={'width': '25%',
+                        'display': 'inline-block'}),
+        html.Div([dcc.Dropdown(id='Region',
+                               options=[{'label': 'All Regions', 'value': 'All Regions'}],#{'label': i,
+                                         # 'value': i
+                                         # } for i in listt(set(df['health_region'])) + ['All Regions']],
+                               value='All Regions')],
+                 style={'width': '25%',
+                        'display': 'inline-block'}),
+
         # keycards
         html.Div(
             dbc.Row(
@@ -77,18 +95,16 @@ app.layout = html.Div(
                             [html.H4(children='Provincial Total', className="card-title"),
                              html.H1(id='provtext_subtitle', className="card-subtitle")]),
                         color="info",
+                        outline=True)),
+                 dbc.Col(
+                    dbc.Card(
+                        dbc.CardBody(
+                            [html.H4(children='Regional Total', className="card-title"),
+                             html.H1(id='reg_total', className="card-subtitle")]),
+                        color="info",
                         outline=True))
                  ])
         ),
-        # Dropdown
-        html.Div(children='''Select geography:'''),
-        html.Div([dcc.Dropdown(id='Province',
-                               options=[{'label': prov_names[i],
-                                         'value': i
-                                         } for i in list(df.province.unique()) + ['All Provinces']],
-                               value='All Provinces')],
-                 style={'width': '25%',
-                        'display': 'inline-block'}),
         dcc.Graph(id='funnel-graph'),
         html.H4(children='Individual COVID cases'),
         dash_table.DataTable(id='filtered-datatable',
@@ -122,12 +138,16 @@ app.layout = html.Div(
 
 @app.callback(
     Output('funnel-graph', 'figure'),
-    [Input('Province', 'value')])
-def update_graph(prov):
+    [Input('Province', 'value'), Input('Region', 'value')])
+def update_graph(prov, region):
+    title_addendum = ''
     if prov == "All Provinces":
         df_plot = df.copy()
     else:
         df_plot = df[df['province'] == prov]
+        if region != 'All Regions':
+            df_plot = df_plot[df_plot['health_region'] == region]
+            title_addendum = f' ({region})'
 
     pv = pd.pivot_table(df_plot,
                         index=['date_report'],
@@ -135,7 +155,6 @@ def update_graph(prov):
                         values=['provincial_case_id'],
                         aggfunc='count',
                         fill_value=nan)
-
     if prov == 'All Provinces':
         trace1 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'Ontario')], name='Ontario')
         trace2 = go.Bar(x=pv.index, y=pv[('provincial_case_id', 'BC')], name='British Columbia')
@@ -158,20 +177,35 @@ def update_graph(prov):
     return {
         'data': traces,
         'layout': go.Layout(
-            title=f'Cases in {prov}',
+            title=f'Cases in {prov}{title_addendum}',
             barmode='stack')
     }
+
+
+# Update region based on province input
+@app.callback(
+    Output("Region", "options"),
+    [Input("Province", "value")])
+def update_region(prov):
+    if prov != 'All Provinces':
+        region_list = list(set(df[df['province'] == prov]['health_region']))
+        region_list = [{'label': i, 'value': i} for i in ['All Regions'] + sorted(region_list)]
+    else:
+        region_list = [{'label': 'All Regions', 'value': 'All Regions'}]
+    return region_list
 
 
 # Cases Table
 @app.callback(
     [Output('filtered-datatable', 'columns'), Output('filtered-datatable', 'data')],
-    [Input('Province', 'value')])
-def update_graph(prov):
+    [Input('Province', 'value'), Input('Region', 'value')])
+def update_graph(prov, region):
     if prov == "All Provinces":
         df_plot = df.copy()
     else:
         df_plot = df[df['province'] == prov]
+        if region != 'All Regions':
+            df_plot = df_plot[df_plot['health_region'] == region]
 
     # Format datetime
     df_plot.loc[:, 'date_report'] = df_plot['date_report'].dt.strftime('%d-%m-%Y')
@@ -187,15 +221,19 @@ def update_graph(prov):
 # Update keycards
 @app.callback(
     [Output("canadatext_subtitle", "children"),
-     Output("provtext_subtitle", "children")],
-    [Input("Province", "value")])
-def update_text(prov):
+     Output("provtext_subtitle", "children"),
+     Output("reg_total", "children")],
+    [Input("Province", "value"),
+     Input("Region", "value")])
+def update_text(prov, region):
     canadatext = "{:,}".format(len(df))
+    provtext = '-'
+    reg_total = '-'
     if prov != 'All Provinces':
         provtext = "{:,}".format(sum(df['province'] == prov))
-    else:
-        provtext = '-'
-    return canadatext, provtext
+        if region != 'All Regions':
+            reg_total = '{:,}'.format(len(df[(df['province'] == prov) & (df['health_region'] == region)]))
+    return canadatext, provtext, reg_total
 
 
 # Update age/gender distribution - bar chart
