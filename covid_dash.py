@@ -187,11 +187,11 @@ def update_graph(prov, region):
     Output("Region", "options"),
     [Input("Province", "value")])
 def update_region(prov):
+    region_list = [{'label': 'All Regions', 'value': 'All Regions'}]
+    
     if prov != 'All Provinces':
         region_list = list(set(df[df['province'] == prov]['health_region']))
         region_list = [{'label': i, 'value': i} for i in ['All Regions'] + sorted(region_list)]
-    else:
-        region_list = [{'label': 'All Regions', 'value': 'All Regions'}]
     return region_list
 
 
@@ -239,14 +239,17 @@ def update_text(prov, region):
 # Update age/gender distribution - bar chart
 @app.callback(
     Output("agegender-graph", "figure"),
-    [Input("Province", "value")])
-def update_agegender(prov):
+    [Input("Province", "value"), Input("Region", 'value')])
+def update_agegender(prov, region):
     if prov == 'All Provinces':
         df_plot = df.copy()
         geo_name = 'Canada'
     else:
         df_plot = df[df['province'] == prov]
         geo_name = prov
+        if region != 'All Regions':
+            df_plot = df_plot[df_plot['health_region'] == region]
+            geo_name = f"{prov} {(region)}"
 
     # Drop if row doesn't have values for either age or sex
     df_plot = df_plot[~((df_plot['age']=='Not Reported') & (df_plot['sex'] == 'Not Reported'))]
@@ -258,13 +261,16 @@ def update_agegender(prov):
     output_data = []
     # If gender data exists for province, add to figure data
     for (sx, colour) in [('Female', layout['Female']), ('Male', layout['Male']), ('Not Reported', layout['Not Reported'])]:
-        if sx in [i[0] for i in df_plot.index]:
-            output_data.append({'x': df_plot[sx].index,
-                                         'y': df_plot[sx].values,
-                                         'type': 'bar',
-                                         'name': sx,
-                                         'color': colour})
-            tick_vals = df_plot[sx].index
+        try:
+            if sx in [i[0] for i in df_plot.index]:
+                output_data.append({'x': df_plot[sx].index,
+                                             'y': df_plot[sx].values,
+                                             'type': 'bar',
+                                             'name': sx,
+                                             'color': colour})
+                tick_vals = df_plot[sx].index
+        except:
+            pass
     return {
         'data': output_data,
         'layout': go.Layout(
@@ -278,14 +284,19 @@ def update_agegender(prov):
 
 @app.callback(
     [Output('death-df', 'columns'), Output('death-df', 'data'), Output('death-graph', 'figure')],
-    [Input('Province', 'value')])
-def update_deathsdf(prov):
+    [Input('Province', 'value'), Input('Region', 'value')])
+def update_deathsdf(prov, region):
     if prov == 'All Provinces':
         death_plot = deaths.copy()
         death_count = len(deaths)
     else:
         death_plot = deaths[deaths['province'] == prov]
         death_count = sum(deaths['province'] == prov)
+
+        if region != 'All Regions':
+            death_plot = death_plot[death_plot['health_region'] == region]
+            death_count = sum(death_plot['health_region'] == region)
+
     cols = [{"name": colname_dict[i], "id": i} for i in death_plot.columns]
     data_ = death_plot.to_dict('records')
 
