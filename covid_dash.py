@@ -182,18 +182,24 @@ def update_graph(prov, region):
     }
 
 
-# Update region based on province input
+# Always update region to "All Regions" when province is changed.
+@app.callback(
+    Output("Region", "value"),
+    [Input("Province", "value")])
+def refresh_region(prov):
+    return 'All Regions'
+
+
+# Update region list to change to region to province's regions
 @app.callback(
     Output("Region", "options"),
     [Input("Province", "value")])
 def update_region(prov):
     region_list = [{'label': 'All Regions', 'value': 'All Regions'}]
-    
     if prov != 'All Provinces':
         region_list = list(set(df[df['province'] == prov]['health_region']))
         region_list = [{'label': i, 'value': i} for i in ['All Regions'] + sorted(region_list)]
     return region_list
-
 
 # Cases Table
 @app.callback(
@@ -254,23 +260,25 @@ def update_agegender(prov, region):
     # Drop if row doesn't have values for either age or sex
     df_plot = df_plot[~((df_plot['age']=='Not Reported') & (df_plot['sex'] == 'Not Reported'))]
 
-    # Group
-    df_plot = df_plot.groupby(['sex', 'age_order'])['provincial_case_id'].count().unstack(fill_value=0).stack()
-
     # If there are not reported values:
     output_data = []
-    # If gender data exists for province, add to figure data
-    for (sx, colour) in [('Female', layout['Female']), ('Male', layout['Male']), ('Not Reported', layout['Not Reported'])]:
-        try:
-            if sx in [i[0] for i in df_plot.index]:
-                output_data.append({'x': df_plot[sx].index,
-                                             'y': df_plot[sx].values,
-                                             'type': 'bar',
-                                             'name': sx,
-                                             'color': colour})
-                tick_vals = df_plot[sx].index
-        except:
-            pass
+    tick_vals =[]
+    if len(df_plot) > 0:
+        # Group
+        df_plot = df_plot.groupby(['sex', 'age_order'])['provincial_case_id'].count().unstack(fill_value=0).stack()
+
+        # If gender data exists for province, add to figure data
+        for (sx, colour) in [('Female', layout['Female']), ('Male', layout['Male']), ('Not Reported', layout['Not Reported'])]:
+            try:
+                if sx in [i[0] for i in df_plot.index]:
+                    output_data.append({'x': df_plot[sx].index,
+                                                 'y': df_plot[sx].values,
+                                                 'type': 'bar',
+                                                 'name': sx,
+                                                 'color': colour})
+                    tick_vals = df_plot[sx].index
+            except:
+                pass
     return {
         'data': output_data,
         'layout': go.Layout(
@@ -286,6 +294,7 @@ def update_agegender(prov, region):
     [Output('death-df', 'columns'), Output('death-df', 'data'), Output('death-graph', 'figure')],
     [Input('Province', 'value'), Input('Region', 'value')])
 def update_deathsdf(prov, region):
+    if_region = ''
     if prov == 'All Provinces':
         death_plot = deaths.copy()
         death_count = len(deaths)
@@ -296,11 +305,12 @@ def update_deathsdf(prov, region):
         if region != 'All Regions':
             death_plot = death_plot[death_plot['health_region'] == region]
             death_count = sum(death_plot['health_region'] == region)
+            if_region = f' ({region})'
 
     cols = [{"name": colname_dict[i], "id": i} for i in death_plot.columns]
     data_ = death_plot.to_dict('records')
 
-    if not death_plot.empty:
+    if len(death_plot) > 0:
         # Graph
         death_plot = death_plot[~((death_plot['age'] == 'Not Reported') & (death_plot['sex'] == 'Not Reported'))]
         death_plot = death_plot.groupby(['sex', 'age_order'])['death_id'].count().unstack(fill_value=0).stack()
@@ -324,7 +334,7 @@ def update_deathsdf(prov, region):
     death_plot_data = {
         'data': death_plot_data_data,
         'layout': go.Layout(
-            title=f'Deaths by Age and Gender in {prov}* (Total: {death_count} deaths)',
+            title=f'Deaths by Age and Gender in {prov}{if_region}* (Total: {death_count} deaths)',
             xaxis={'tickvals': tick_vals,
                    'ticktext': [inverse_order_dict(i) for i in tick_vals],
                    'title': 'Age Range'}
