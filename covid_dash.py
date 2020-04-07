@@ -345,5 +345,5 @@ def update_deathsdf(prov, region):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True,
-                   dev_tools_hot_reload_interval=40_000)
+    app.run_server()
+    
