@@ -7,18 +7,20 @@ covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHza
 
 
 
-def get_covid_data(covid_case_url, method_ = 'url'):
+def get_covid_data(covid_case_url, method_='url'):
     if method_ == 'url':
         s = requests.get(covid_case_url).content
         BytesIO = pd.io.common.BytesIO  # Wrap in BytesIO to make it a file-like object
         s = BytesIO(s)
+        filesource_caveat = ''
 
     else:
         s = r'Data/Public_COVID-19_Canada.xlsx'
+        filesource_caveat = ' [cached]'
 
     # Update Date
     update_date = pd.read_excel(s, sheet_name='Cases', index_col=None, header=None, nrows=1, engine='xlrd')
-    update_date = str(update_date.iloc[0, 0])[13:]
+    update_date = str(update_date.iloc[0, 0])[13:]+filesource_caveat
 
 
     # Cases Data

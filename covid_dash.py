@@ -16,7 +16,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/export?format=xlsx'
 
 
-df, deaths, update_date = get_covid_data(covid_case_url, method_='url')
+df, deaths, update_date = get_covid_data(covid_case_url, method_='local')
 
 # Clean age group data
 for x in [df, deaths]:
@@ -345,5 +345,5 @@ def update_deathsdf(prov, region):
 
 
 if __name__ == '__main__':
-    app.run_server()
-    
+    app.run_server(debug=True,
+                   dev_tools_hot_reload_interval=40_000)
