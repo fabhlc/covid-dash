@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 from datetime import datetime
+import eventlet
 
 # Get data
 covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/export?format=xlsx'
@@ -8,12 +9,19 @@ covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHza
 
 
 def get_covid_data(covid_case_url, method_='url'):
-    if method_ == 'url':
-        s = requests.get(covid_case_url).content
-        BytesIO = pd.io.common.BytesIO  # Wrap in BytesIO to make it a file-like object
-        s = BytesIO(s)
-        filesource_caveat = ''
+    # Initiate eventlet to manage request timeout
+    eventlet.monkey_patch()
 
+    if method_ == 'url':
+        try:
+            with eventlet.timeout.Timeout(10):
+                s = requests.get(covid_case_url).content
+                BytesIO = pd.io.common.BytesIO  # Wrap in BytesIO to make it a file-like object
+                s = BytesIO(s)
+                filesource_caveat = ''
+        except:
+            s = r'Data/Public_COVID-19_Canada.xlsx'
+            filesource_caveat = ' [cached]'
     else:
         s = r'Data/Public_COVID-19_Canada.xlsx'
         filesource_caveat = ' [cached]'
