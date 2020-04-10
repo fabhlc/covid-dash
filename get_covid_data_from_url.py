@@ -26,7 +26,7 @@ def get_covid_data(covid_case_url, method_='url'):
                     s = requests.get(backup_url).content
                     BytesIO = pd.io.common.BytesIO  # Wrap in BytesIO to make it a file-like object
                     s = BytesIO(s)
-                    filesource_caveat = ''
+                    filesource_caveat = ' [cached].'
             except:
                 s = r'Data/Public_COVID-19_Canada.xlsx'
                 filesource_caveat = ' [cached]'
