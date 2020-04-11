@@ -5,6 +5,7 @@ import eventlet
 
 # Get data
 covid_case_url = r'https://docs.google.com/spreadsheets/d/1D6okqtBS3S2NRC7GFVHzaZ67DuTw7LX49-fqSLwJyeo/export?format=xlsx'
+backup_url = r'https://docs.google.com/spreadsheets/d/11z8MF7UTt3_EraMvPF4IilVZHL6cwM6t/export?format=xlsx'
 
 
 
@@ -20,8 +21,15 @@ def get_covid_data(covid_case_url, method_='url'):
                 s = BytesIO(s)
                 filesource_caveat = ''
         except:
-            s = r'Data/Public_COVID-19_Canada.xlsx'
-            filesource_caveat = ' [cached]'
+            try:
+                with eventlet.timeout.Timeout(10):
+                    s = requests.get(backup_url).content
+                    BytesIO = pd.io.common.BytesIO  # Wrap in BytesIO to make it a file-like object
+                    s = BytesIO(s)
+                    filesource_caveat = ' [cached].'
+            except:
+                s = r'Data/Public_COVID-19_Canada.xlsx'
+                filesource_caveat = ' [cached]'
     else:
         s = r'Data/Public_COVID-19_Canada.xlsx'
         filesource_caveat = ' [cached]'
